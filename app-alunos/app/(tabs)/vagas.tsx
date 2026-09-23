@@ -1,69 +1,105 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { supabase } from '../../lib/supabase';
 
 export default function VagasScreen() {
+  const [vagas, setVagas] = useState<any[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    carregarVagas();
+  }, []);
+
+  const carregarVagas = async () => {
+    try {
+      // Puxa as vagas reais e o nome do curso exigido (caso exista)
+      const { data, error } = await supabase.from('vagas').select('*, cursos!curso_obrigatorio_id(titulo)');
+      if (error) throw error;
+      setVagas(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar vagas:", error);
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  const handleCandidatar = (vagaId: string) => {
+    // Na próxima etapa, vamos ligar isto à nova tabela de candidaturas!
+    alert("Função de candidatura será ativada na próxima etapa.");
+  };
+
+  if (carregando) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#09090b', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#0ea5e9" />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.headerTitle}>Mural de Vagas 💼</Text>
-      <Text style={styles.headerSubtitle}>Oportunidades alinhadas ao seu desempenho e tags.</Text>
-
-      {/* Card de Vaga 1 - Compatível */}
-      <View style={styles.vagaCard}>
-        <View style={styles.vagaHeader}>
-          <View>
-            <Text style={styles.vagaCompany}>TECH SOLUTIONS</Text>
-            <Text style={styles.vagaTitle}>Organização de Planilhas</Text>
-          </View>
-          <View style={styles.matchBadge}>
-            <Text style={styles.matchText}>98% Match</Text>
-          </View>
-        </View>
-        <Text style={styles.vagaSalary}>💰 R$ 150,00 / desafio</Text>
-        <Text style={styles.vagaReq}>Requisito: Curso de Fundamentos concluído</Text>
-
-        <TouchableOpacity style={styles.applyButton}>
-          <Text style={styles.applyButtonText}>Candidatar-se Agora</Text>
-        </TouchableOpacity>
+    <ScrollView style={{ flex: 1, backgroundColor: '#09090b' }} contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+        <Text style={{ fontSize: 28, fontWeight: 'bold', color: 'white', marginRight: 8 }}>
+          Mural de Vagas
+        </Text>
+        <Text style={{ fontSize: 24 }}>💼</Text>
       </View>
+      
+      <Text style={{ color: '#a1a1aa', fontSize: 14, marginBottom: 24 }}>
+        Oportunidades alinhadas ao seu desempenho e tags.
+      </Text>
 
-      {/* Card de Vaga 2 - Bloqueada por Curso */}
-      <View style={[styles.vagaCard, { opacity: 0.75 }]}>
-        <View style={styles.vagaHeader}>
-          <View>
-            <Text style={styles.vagaCompany}>HOST CORP</Text>
-            <Text style={styles.vagaTitle}>Suporte Nível 1 (Chat)</Text>
-          </View>
-          <View style={styles.lockBadge}>
-            <Text style={styles.lockText}>🔒 Bloqueado</Text>
-          </View>
-        </View>
-        <Text style={styles.vagaSalary}>💰 R$ 450,00 / mês</Text>
-        <Text style={styles.vagaReq}>Requisito: Terminar trilha de Atendimento</Text>
+      {vagas.length === 0 ? (
+        <Text style={{ color: '#71717a', textAlign: 'center', marginTop: 40 }}>
+          Ainda não há vagas disponíveis na plataforma.
+        </Text>
+      ) : (
+        vagas.map((vaga) => (
+          <View key={vaga.id} style={{ backgroundColor: '#18181b', padding: 20, borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#27272a' }}>
+            <Text style={{ color: '#71717a', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 8 }}>
+              {vaga.empresa}
+            </Text>
+            
+            <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+              {vaga.titulo}
+            </Text>
+            
+            <Text style={{ color: '#a1a1aa', fontSize: 14, marginBottom: 16, lineHeight: 20 }}>
+              {vaga.descricao}
+            </Text>
 
-        <TouchableOpacity style={styles.lockedButton}>
-          <Text style={styles.lockedButtonText}>Estudar para Desbloquear</Text>
-        </TouchableOpacity>
-      </View>
+            {/* Lógica de Bloqueio baseada na exigência de curso */}
+            {vaga.cursos ? (
+              <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: '#fbbf24', fontSize: 12 }}>
+                  🔒 Requisito: Concluir trilha de {vaga.cursos.titulo}
+                </Text>
+              </View>
+            ) : (
+              <View style={{ marginBottom: 16, flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: '#10b981', fontSize: 12 }}>
+                  🔓 Vaga de Acesso Livre
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              onPress={() => handleCandidatar(vaga.id)}
+              disabled={!!vaga.cursos} // Se tiver curso obrigatório, o botão fica desativado
+              style={{
+                backgroundColor: vaga.cursos ? '#27272a' : '#0ea5e9',
+                padding: 14,
+                borderRadius: 12,
+                alignItems: 'center'
+              }}
+            >
+              <Text style={{ color: vaga.cursos ? '#71717a' : 'white', fontWeight: 'bold' }}>
+                {vaga.cursos ? 'Estudar para Desbloquear' : 'Candidatar-se Agora'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#09090b' },
-  content: { padding: 24, paddingTop: 60, paddingBottom: 110 },
-  headerTitle: { color: '#ffffff', fontSize: 26, fontWeight: 'bold', marginBottom: 4 },
-  headerSubtitle: { color: '#a1a1aa', fontSize: 13, marginBottom: 24 },
-  vagaCard: { backgroundColor: '#121214', borderRadius: 20, padding: 20, borderWidth: 1, borderColor: '#27272a', marginBottom: 16 },
-  vagaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
-  vagaCompany: { color: '#71717a', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
-  vagaTitle: { color: '#ffffff', fontSize: 16, fontWeight: 'bold', marginTop: 2 },
-  matchBadge: { backgroundColor: 'rgba(52, 211, 153, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(52, 211, 153, 0.2)' },
-  matchText: { color: '#34d399', fontSize: 10, fontWeight: 'bold' },
-  lockBadge: { backgroundColor: 'rgba(113, 113, 122, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#27272a' },
-  lockText: { color: '#a1a1aa', fontSize: 10, fontWeight: 'bold' },
-  vagaSalary: { color: '#38bdf8', fontSize: 14, fontWeight: 'bold', marginBottom: 6 },
-  vagaReq: { color: '#71717a', fontSize: 11, marginBottom: 16 },
-  applyButton: { backgroundColor: '#0ea5e9', paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  applyButtonText: { color: '#ffffff', fontSize: 13, fontWeight: 'bold' },
-  lockedButton: { backgroundColor: '#18181b', paddingVertical: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: '#27272a' },
-  lockedButtonText: { color: '#a1a1aa', fontSize: 13, fontWeight: 'bold' }
-});

@@ -1,69 +1,56 @@
-# 🚀 Plataforma Jovem Aprendiz - Ecossistema Integrado
+# 🚀 Plataforma de Recrutamento & Trilhas de Aprendizagem com IA
 
-Um ecossistema completo de recrutamento e capacitação profissional que conecta **Empresas** e **Estudantes/Aprendizes** através de duas plataformas (Web e Mobile), impulsionado por Inteligência Artificial.
-
-## 📖 Sobre o Projeto
-
-O objetivo deste projeto é revolucionar a forma como as empresas treinam e recrutam jovens talentos. A plataforma permite que recrutadores criem trilhas de estudo automatizadas com o uso de IA. Os alunos consomem esse conteúdo via aplicativo móvel, ganham experiência (XP) e desbloqueiam vagas de emprego ou desafios corporativos.
-
-O ecossistema é dividido em duas partes principais:
-1. **Portal das Empresas (Web):** Onde recrutadores gerem vagas, candidaturas e criam cursos e PDFs didáticos gerados automaticamente por IA.
-2. **Aplicativo do Aluno (Mobile):** Onde os estudantes acedem aos materiais de estudo, conversam com a IA Tutora para tirar dúvidas e falam diretamente com os recrutadores.
-
----
-
-## ✨ Principais Funcionalidades
-
-### 🏢 Para Empresas (Painel Web)
-* **Geração de Cursos via IA:** Criação automatizada de guias de estudo estruturados e PDFs usando a API do Gemini.
-* **Gestão de Vagas:** Publicação de desafios e vagas, com requisitos de conclusão de cursos específicos.
-* **Métricas em Tempo Real:** Dashboard para acompanhamento de candidatos ativos, taxas de conclusão e cursos publicados.
-
-### 📱 Para Alunos (Aplicativo Mobile)
-* **Gamificação e Trilhas:** O aluno consome o material (PDFs) e ganha recompensas (XP).
-* **Tutor de IA Integrado:** Um assistente inteligente flutuante que tira dúvidas específicas sobre o material de estudo.
-* **Chat Humano Direto:** Uma área exclusiva para os estudantes conversarem com os recrutadores das empresas.
-* **Desbloqueio de Vagas:** Vagas e oportunidades exclusivas libertadas apenas após a conclusão das trilhas obrigatórias.
-
----
+Uma plataforma inovadora que liga empresas a talentos através de trilhas de aprendizagem geradas por Inteligência Artificial. Se o candidato concluir o curso e passar no quiz, a vaga é desbloqueada!
 
 ## 🛠️ Tecnologias Utilizadas
-
-**Frontend Web (Portal das Empresas)**
-* [Next.js](https://nextjs.org/) (React)
-* [Tailwind CSS](https://tailwindcss.com/) (Estilização)
-* [Lucide Icons](https://lucide.dev/) (Ícones)
-
-**Frontend Mobile (Aplicativo dos Alunos)**
-* [Expo](https://expo.dev/) & [React Native](https://reactnative.dev/)
-* Navegação via `expo-router`
-
-**Backend & Base de Dados**
-* [Supabase](https://supabase.com/) (PostgreSQL)
-* Armazenamento de Arquivos (Supabase Storage para PDFs)
-* Autenticação e RLS (Row Level Security)
-
-**Inteligência Artificial**
-* Integração com IA Generativa (ex: Google Gemini) para criação de material didático e tutoria.
+* **Portal Corporativo:** Next.js, React, Tailwind CSS
+* **Aplicativo Mobile (Alunos):** React Native, Expo
+* **Base de Dados & Autenticação:** Supabase (PostgreSQL)
+* **Inteligência Artificial:** Google Gemini API (gemini-3.6-flash)
 
 ---
 
-## 🗄️ Estrutura de Base de Dados (Relacional)
+## 📋 Pré-requisitos
 
-O projeto assenta em tabelas interligadas no Supabase:
-* `cursos`: Armazena os tópicos, PDFs gerados e XP de recompensa.
-* `vagas`: Vagas e desafios associados aos cursos (Chave Estrangeira para bloqueio/desbloqueio).
-* `candidaturas`: Registo do progresso dos alunos e status das vagas.
+Antes de começares, certifica-te de que tens instalado na tua máquina:
+* [Node.js](https://nodejs.org/)
+* [Git](https://git-scm.com/)
+* App **Expo Go** instalada no teu telemóvel (iOS ou Android)
+* Uma conta no [Supabase](https://supabase.com/) e no [Google AI Studio](https://aistudio.google.com/) para as chaves de API.
 
 ---
 
-## 🚀 Como Executar o Projeto Localmente
+## ⚙️ Configuração do Banco de Dados (Supabase)
+No painel do teu Supabase, acede ao **SQL Editor** e cria as tabelas base para o sistema funcionar:
 
-### Pré-requisitos
-* [Node.js](https://nodejs.org/) instalado.
-* Conta no [Supabase](https://supabase.com/) configurada com o SQL inicial do projeto.
+```sql
+-- Tabela de Cursos (IA)
+CREATE TABLE cursos (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa text,
+  titulo text NOT NULL,
+  descricao text,
+  xp integer,
+  conteudo jsonb,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
 
-### 1. Clonar o Repositório
-```bash
-git clone [https://github.com/izak1404/Menor-Aprendiz.git](https://github.com/izak1404/Menor-Aprendiz.git)
-cd Menor-Aprendiz
+-- Tabela de Vagas
+CREATE TABLE vagas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  empresa text NOT NULL,
+  titulo text NOT NULL,
+  descricao text NOT NULL,
+  curso_obrigatorio_id uuid REFERENCES cursos(id) ON DELETE CASCADE,
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+
+-- Tabela de Candidaturas
+CREATE TABLE candidaturas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  vaga_id uuid REFERENCES vagas(id) ON DELETE CASCADE,
+  aluno_nome text NOT NULL,
+  aluno_email text NOT NULL,
+  status text DEFAULT 'Pendente',
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
